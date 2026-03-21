@@ -10,7 +10,7 @@ This is a Openrouter API used, node-structured WebUI tool serves as a conversati
 - **Core mechanism**: this program creates a nodejs process for request handling and another python process for data store&Openrouter requests, Another terminal emulator process will be created too. The communicating mechanism between nodejs and python process is based on this terminal process.
 
 ### Screenshots
-
+<img width="1103" height="913" alt="example" src="https://github.com/user-attachments/assets/a2eb5e95-100b-42b4-a226-4af667f9c4f7" />
 ### Installation
 
 Installation of Nodejs and Python is required
@@ -39,7 +39,7 @@ Installation of Nodejs and Python is required
 - **主要机制** 通过一个伪终端进程实现nodejs进程与python进程间的通信，协同了请求处理与数据处理
 
 ### 截屏展示
-
+<img width="1103" height="913" alt="example" src="https://github.com/user-attachments/assets/a2eb5e95-100b-42b4-a226-4af667f9c4f7" />
 ### 使用方法
 
 需要先安装nodejs与python
