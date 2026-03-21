@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body {
+			font-family: sans-serif; 
+			display: flex; 
+			justify-content: center; 
+			align-items: center; 
+			height:100vh
+		}
+        #loginMenu{
+			border: 1px solid gray; 
+			padding: 20px; 
+			border-radius: 5px; 
+			box-shadow: 0 0 5px #8b8b8b
+		}
+        #password {
+			
+			 
+			padding: 8px; 
+			width: 200px; 
+		}
+		span{
+			margin: 8px;
+			display: block; 
+			font-family: Arial;
+			font-size:12px;
+			font-weight:700;
+			color: #bbbbbb;
+		}
+		#Loginbtn {
+			padding: 8px; 
+			padding-top: 5px;
+			display:inline-block;
+			width:50px;
+			height:15px;
+			background-color: #9cb6f5;
+			border: 1px solid #333;
+			border-radius: 20px;
+			font-weight:900;
+			text-align: center;
+			cursor: pointer;
+		}
+		#Loginbtn:hover {
+			border-color: #007bff;
+			box-shadow: 0 0 5px rgba(0,123,255,0.5);
+			cursor: pointer;
+		}
+		#Loginbtn.Loading{
+		 background: repeating-linear-gradient(
+		 45deg,
+		 #f0f0f0,
+		 #f0f0f0 10px,
+		 #bdbdbd 10px,
+		 #bdbdbd 20px
+		 );
+		 cursor: wait;
+		}
+    </style>
+</head>
+<body>
+    <div id="loginMenu">
+	    <h1 style="margin: 8px;">Welcome</h1>
+        <span>Remember to set password&APIkey</span>
+		<div style="display:flex;gap:10px;margin: 8px;align-items: center;">
+        <form id="passwordform" action="/login" method="post"><input type="password" name="password" id="password" placeholder="Password"></form>
+        <div id="Loginbtn">Login</div>
+    </div>
+	<script>
+	const loginDiv = document.getElementById('Loginbtn');
+	loginDiv.addEventListener('click', () => {
+		loginDiv.classList.add("Loading");
+		document.getElementById("passwordform").submit();});
+	</script>
+</body>
+</html>
