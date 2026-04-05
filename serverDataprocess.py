@@ -1,33 +1,133 @@
-import code
+from typing import Annotated,Any
+from fastapi import Cookie,FastAPI,Response,status,Request,Form,Body
+from fastapi.responses import HTMLResponse,RedirectResponse,FileResponse,StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from collections.abc import AsyncIterable, Iterable
 import json
 import requests
 import sys
 import re
 import os
 import time
+import asyncio 
+import uuid
 
-def main():
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    api_key=os.getenv('OPENROUTER_API', default='')#PUT_YOUR_OPENROUTER_API_KEY_HERE_OR_SET_AN_ENVIRONMENT_VARIABLE
-    headers = {
-        "Authorization": api_key,
-        "Content-Type": "application/json"
-    }        
-    ll = LinkedList()
-    ##ll.node_append(None,"initial","user",None)
-    ll.head=Node("system","INITIAL_NODE",None,None)
-    ll.selectedNode=ll.head
-    for i in range(20):
-        ll.head.c_node.append(None)
-    ll.loadBlock(0)
-    code.interact(local=dict(globals(), **locals()))
+lock=asyncio.Lock()
+openRouterurl = "https://openrouter.ai/api/v1/chat/completions"
+api_key=os.getenv('OPENROUTER_API', default='')#PUT_YOUR_OPENROUTER_API_KEY_HERE_OR_SET_AN_ENVIRONMENT_VARIABLE
+CORRECT_PASSWORD = os.getenv('VIEWER_PASSWORD', default='')#PUT_YOUR_PASSWORD_TO_VIEWER_HERE_OR_SET_AN_ENVIRONMENT_VARIABLE
+SESSION_ID=uuid.uuid4().hex
+headers = {
+    "Authorization": "Bearer "+api_key,
+    "Content-Type": "application/json"
+}
 
+class SRsendMessage(BaseModel):
+    message:str|None
+    model:str
+class SRnode(BaseModel):
+    content:str
+    role:str
+    model:str|None=''
+app= FastAPI(redirect_slashes=False)
+app.mount("/public",StaticFiles(directory="public",html=True),name="public")     
+@app.middleware("http")
+async def session_check(request: Request,call_next):
+    if request.url.path=="/" or request.url.path=="/docs" or "/login" in request.url.path or "/public/" in request.url.path:
+        response= await call_next(request)
+        return response
+    if request.cookies["lcv_session_ID"]!=None:
+        if request.cookies["lcv_session_ID"]!=SESSION_ID:
+            return RedirectResponse(url="/?error=1")
+        else:
+            response= await call_next(request)
+            return response
+    else: 
+        return RedirectResponse(url="/")
+@app.get('/')
+async def SRsendloginHTML():
+    async with lock:
+        response=RedirectResponse(url="/public/login.html")
+    return response
+
+@app.post("/login", response_class=HTMLResponse)
+async def SRlogin(password:Annotated[str,Form()]=''):
+    async with lock:
+        if password== CORRECT_PASSWORD:
+            response=RedirectResponse(url="/viewer",status_code=status.HTTP_302_FOUND)
+            response.set_cookie(key="lcv_session_ID",
+            value=SESSION_ID)
+            return response
+        else:
+            response=RedirectResponse(url="/?error=1")
+            return response
+@app.get('/logout')
+async def SRlogout():
+    async with lock:
+        response=RedirectResponse(url="/")
+        response.delete_cookie("lcv_session_ID")
+        return response        
+@app.get('/viewer',response_class=FileResponse)
+async def SRviewer():
+    async with lock: 
+        return FileResponse("client.html")
+@app.post('/submit-data-a',response_class=StreamingResponse)
+async def SRsubmita(b:Annotated[SRsendMessage,Body()])-> AsyncIterable[str]:
+    async with lock:
+        for chunk in send_message(ll,b.message,b.model,openRouterurl,headers):
+            yield chunk
+@app.post('/submit-data-u',response_class=StreamingResponse)
+async def SRsubmitu(b:Annotated[SRsendMessage,Body()])-> AsyncIterable[str]:
+    async with lock:
+        for chunk in send_message_u(ll,b.model,openRouterurl,headers):
+            yield chunk
+@app.post('/append')
+async def SRappend(node:Annotated[SRnode,Body()]):
+    async with lock:  
+        appendnode(node.content,node.role,node.model,ll)
+        return Response(status_code=201)
+@app.post('/delete')
+async def SRdelete():
+    async with lock: 
+        deletenode(ll)
+        return Response(status_code=200)
+@app.post('/save-data')
+async def SRsave():
+    async with lock:
+        saveSubtrees(ll)
+        return Response(status_code=200)
+@app.post('/load-tree')
+async def SRload(response:Response):
+    async with lock:
+        response.headers['Content-Type']='text/plain;charset=utf-8'
+        return transmitTree(ll)
+@app.post('/load-lastblc')
+async def SRloadlast(response:Response):
+    async with lock: 
+        response.headers['Content-Type']='text/plain;charset=utf-8'
+        return transmitTree_lastBlc(ll)
+@app.post('/locate')
+async def SRlocate(Nodecoordinate:list[Any]=[]):#pydantic will automatically parse complex type from body
+    async with lock: 
+        print(Nodecoordinate)
+        ll.locate(Nodecoordinate)
+        return Response(status_code=200)
+@app.post('/display-node')
+async def SRdisply(response:Response):
+    async with lock: 
+        response.headers['Content-Type']='text/plain;charset=utf-8'
+        return transCont(ll.selectedNode)
+@app.post('/search')
+async def SRsearch():
+    async with lock:
+        return
 def saveSubtrees(llist):
     try:
         filtered_list = [item for item in llist.head.c_node if item is not None]
         for subTree in filtered_list:
             subTreeID=subTree.data['subTreeID']
-            filename="subTreeID"+str(subTreeID)+".json"
+            filename="subtrees/subTreeID"+str(subTreeID)+".json"
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(subTree, f,indent=4,ensure_ascii=False,cls=CustomEncoder)
             print(f"subTree{subTreeID} successfully saved into {filename}")
@@ -58,7 +158,7 @@ def deletenode(llist):
     llist.node_delete()
     print("FINISH_SIGNAL")
 def iterate_word():
-    text=open("template_answer").read()
+    text=open("subtrees/template_answer").read()
     for word in text.split():
         outputword=word+" "
         yield outputword
@@ -78,11 +178,9 @@ def send_message(llist,message,modelname,url,headers):
     messagestosend.append(lastmessage)
     if modelname=='testmodel':
         for word in iterate_word():
-            with open("py_js_interchange","a", encoding='utf-8') as file:
-                file.write(word)
-                file.flush() 
-            contentstring+=word
             time.sleep(0.1)
+            contentstring+=word
+            yield word 
     else:
         payload = {
             "model": modelname,
@@ -90,6 +188,7 @@ def send_message(llist,message,modelname,url,headers):
             "stream": True
         }
         buffer = ""
+
         with requests.post(url, headers=headers, json=payload, stream=True) as r:
             r.encoding='utf-8'
             for chunk in r.iter_content(chunk_size=1024, decode_unicode=True):
@@ -110,14 +209,12 @@ def send_message(llist,message,modelname,url,headers):
                                 data_obj = json.loads(data)
                                 content = data_obj["choices"][0]["delta"].get("content")
                                 if content:
-                                    with open("py_js_interchange","a", encoding='utf-8') as file:
-                                        file.write(content)
-                                        file.flush() 
-                                        ##os.fsync(file.fileno())
+                                    yield content
                                     contentstring+=content
                             except json.JSONDecodeError:
                                 pass
                     except Exception:
+                        print(Exception)
                         break
            
     print()
@@ -134,11 +231,9 @@ def send_message_u(llist,modelname,url,headers):
         messagestosend.insert(0,i)
     if modelname=='testmodel':
         for word in iterate_word():##automating next()
-            with open("py_js_interchange","a", encoding='utf-8') as file:
-                file.write(word)
-                file.flush() 
-            contentstring+=word    
             time.sleep(0.1)
+            contentstring+=word
+            yield word 
     else:
         payload = {
             "model": modelname,
@@ -166,50 +261,38 @@ def send_message_u(llist,modelname,url,headers):
                                 data_obj = json.loads(data)
                                 content = data_obj["choices"][0]["delta"].get("content")
                                 if content:
-                                    with open("py_js_interchange","a", encoding='utf-8') as file:
-                                        file.write(content)
-                                        file.flush() 
-                                        ##os.fsync(file.fileno())
+                                    yield content  
                                     contentstring+=content
                             except json.JSONDecodeError:
                                 pass
                     except Exception:
-                        break
+                        print(Exception)
+                        return
            
-    print()
     print("FINISH_SIGNAL")
     llist.node_append(contentstring,'assistant',modelname,None)
 def transmitTree(linkedlist):
     LinkedList.arrayTree=[]
     linkedlist.getarrayTree(linkedlist.head)
-    
-    with open("py_js_interchange","w", encoding='utf-8') as file:
-        json.dump(LinkedList.arrayTree,file,ensure_ascii=False)
-        #json.dump(linkedlist.getnodeTree(linkedlist.head),file,cls=CustomEncoder)
-        file.flush() 
+    return LinkedList.arrayTree
     print("FINISH_SIGNAL")
 def transmitTree_lastBlc(linkedlist):
     LinkedList.arrayTree=[]
     filtered_list = [item for item in linkedlist.head.c_node if item is not None]
     MaxsubTreeID=linkedlist.head.c_node[len(filtered_list)-1].data['subTreeID']
-    Maxname='subTreeID'+str(MaxsubTreeID)+".json"
+    Maxname='subtrees/subTreeID'+str(MaxsubTreeID)+".json"
     while os.path.exists(Maxname):
         MaxsubTreeID=MaxsubTreeID+1
-        Maxname='subTreeID'+str(MaxsubTreeID)+".json"
+        Maxname='subtrees/subTreeID'+str(MaxsubTreeID)+".json"
     MaxsubTreeID=MaxsubTreeID-1
     lastblcID=int((MaxsubTreeID-MaxsubTreeID%20)/20)
     linkedlist.loadBlock(lastblcID)
     linkedlist.getarrayTree(linkedlist.head);
     LinkedList.arrayTree.insert(0,lastblcID)
-    with open("py_js_interchange","w", encoding='utf-8') as file:
-        json.dump(LinkedList.arrayTree,file,ensure_ascii=False)
-        #json.dump(linkedlist.getnodeTree(linkedlist.head),file,cls=CustomEncoder)
-        file.flush() 
+    return LinkedList.arrayTree
     print("FINISH_SIGNAL")
 def transCont(selectedNode):
-    with open("py_js_interchange","w", encoding='utf-8') as file:
-        json.dump(selectedNode.data,file,ensure_ascii=False)
-        file.flush() 
+    return selectedNode.data
     print("FINISH_SIGNAL")
 def custom_decoder_hook(dct):
     if "__type__" in dct:
@@ -301,10 +384,10 @@ class LinkedList:
         else:            
             filtered_list = [item for item in self.selectedNode.c_node if item is not None]
             subTreeIDtoadd=0
-            Maxname='subTreeID'+str(subTreeIDtoadd)+".json"
+            Maxname='subtrees/subTreeID'+str(subTreeIDtoadd)+".json"
             while os.path.exists(Maxname):
                 subTreeIDtoadd=subTreeIDtoadd+1
-                Maxname='subTreeID'+str(subTreeIDtoadd)+".json"
+                Maxname='subtrees/subTreeID'+str(subTreeIDtoadd)+".json"
             new_node = Node(role,content,model,None)
             new_node.data['subTreeID']=subTreeIDtoadd
             with open(Maxname,"w", encoding='utf-8') as file:
@@ -324,14 +407,14 @@ class LinkedList:
                 if self.selectedNode.p_node.c_node[i].data['subTreeID']>subTreeIDtodel:
                    self.selectedNode.p_node.c_node[i-1]=self.selectedNode.p_node.c_node[i]
                    self.selectedNode.p_node.c_node[i-1].data['subTreeID']=self.selectedNode.p_node.c_node[i-1].data['subTreeID']-1
-            filename='subTreeID'+str(subTreeIDtodel)+".json"
+            filename='subtrees/subTreeID'+str(subTreeIDtodel)+".json"
             os.remove(filename)
             subTreeIDtodel=subTreeIDtodel+1
-            filename='subTreeID'+str(subTreeIDtodel)+".json"
+            filename='subtrees/subTreeID'+str(subTreeIDtodel)+".json"
             while os.path.exists(filename):
-                os.rename(filename,'subTreeID'+str(subTreeIDtodel-1)+".json")
+                os.rename(filename,'subtrees/subTreeID'+str(subTreeIDtodel-1)+".json")
                 subTreeIDtodel=subTreeIDtodel+1
-                filename='subTreeID'+str(subTreeIDtodel)+".json"
+                filename='subtrees/subTreeID'+str(subTreeIDtodel)+".json"
             maxSubtreeID=max(self.subTreeset)
             self.subTreeset.remove(maxSubtreeID)
             self.selectedNode.p_node.c_node[len(filtered_list)-1]=None
@@ -380,7 +463,7 @@ class LinkedList:
             try:
                 if self.head.c_node[cInd] is not None:
                     replacedID=self.head.c_node[cInd].data['subTreeID']
-                    filename="subTreeID"+str(replacedID)+".json"
+                    filename="subtrees/subTreeID"+str(replacedID)+".json"
                     with open(filename, 'w', encoding='utf-8') as f:
                         json.dump(self.head.c_node[cInd], f,indent=4,ensure_ascii=False,cls=CustomEncoder)
                     self.subTreeset.remove(replacedID)
@@ -388,7 +471,7 @@ class LinkedList:
             except IOError as e:
                 print(f"Error:cannot write into {filename} {e}")
             try:
-                filename="subTreeID"+str(Treeid)+".json"
+                filename="subtrees/subTreeID"+str(Treeid)+".json"
                 if os.path.exists(filename):
                     with open(filename, 'r', encoding='utf-8') as f:
                         self.head.c_node[cInd]=json.load(f, object_hook=custom_decoder_hook)
@@ -401,5 +484,12 @@ class LinkedList:
                 print(f"Error: Cannot load subTree from {filename} {e}")
                 return None
       
-if __name__ == "__main__":
-    main()
+   
+ll = LinkedList()
+##ll.node_append(None,"initial","user",None)
+ll.head=Node("system","INITIAL_NODE",None,None)
+ll.selectedNode=ll.head
+for i in range(20):
+    ll.head.c_node.append(None)
+ll.loadBlock(0)
+

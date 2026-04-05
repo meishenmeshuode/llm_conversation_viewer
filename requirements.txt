@@ -1,0 +1,7 @@
+typing
+fastapi
+pydantic
+requests
+uuid
+fastapi[standard]
+asyncio

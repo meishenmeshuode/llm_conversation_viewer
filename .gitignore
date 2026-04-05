@@ -2,3 +2,4 @@ cloudflared-windows-amd64.exe
 node_modules/
 python/template_answer
 python/py_js_interchange
+/__pycache__
