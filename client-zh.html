@@ -220,9 +220,9 @@
 				<option value="user">User</option>
 				<option value="assistant">Assistant</option>
 			</select>
-			<input type="checkbox" id="subTreeAddBtn" style="margin:0px"/>
+			<input disabled type="checkbox" id="subTreeAddBtn" style="margin:0px" checked=true/>
 			<span style="font-family: Arial;font-size:10px;">增添新子树</span>
-			<button disabled id="addNodebutton" style="font-size:11px;padding-left:1px;padding-right:1px" onclick="sendCoordinate_thenAction('append');">增添节点</button>
+			<button id="addNodebutton" style="font-size:11px;padding-left:1px;padding-right:1px" onclick="sendCoordinate_thenAction('append');">增添节点</button>
 			<button disabled id="deleteNodebutton" style="font-size:11px;padding-left:1px;padding-right:1px" onclick="sendCoordinate_thenAction('delete');">删除子树</button>
 			
 		</div>

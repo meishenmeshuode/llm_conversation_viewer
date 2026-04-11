@@ -1,6 +1,6 @@
 # LLM Openrouter Conversation Viewer
 
-This is a Openrouter API used conversations llm(large language model) reader tool with a node flow-chart like webUI, aiming to make user's managing, reviewing&messaging operation easier and more intuitive.
+This is a Openrouter API used conversations llm(large language model) reader tool with a node flow-chart webUI, aiming to make user's managing, reviewing&messaging operation easier and more intuitive. This gives a huge advantage over other regular chat UI when you want to have a light weight but massive operations such as switching back and forth or opening multiple branches on one parent node.
 
 ### Key Feature
 

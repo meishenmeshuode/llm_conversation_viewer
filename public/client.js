@@ -357,6 +357,8 @@ canvas.addEventListener('click', function(event) {
 		document.getElementById("addNodebutton").disabled = false;
 		document.getElementById("deleteNodebutton").disabled = false;
 		document.getElementById("displybutton").disabled = false;
+		document.getElementById("subTreeAddBtn").checked = false;
+		document.getElementById("subTreeAddBtn").disabled = false;
 		const currentActive = canvas.querySelector('.node.active');
 		if (currentActive && currentActive !== item) {
 			currentActive.classList.remove('active');
@@ -419,6 +421,10 @@ async function sendCoordinate_thenAction(action){
 			await loadTree();
 			break;
 		case "submit":
+			if(canvas.querySelector('.node.active')===null){
+				alert("Before sending message to a model, please select a parent node on canvas!");
+				break;
+			}
 			const NodeBefore=dataTree.nodeMap.get(canvas.querySelector('.node.active').id);
 			if(NodeBefore.role==="user"){
 				await sendToRouter_u();}else{
@@ -429,7 +435,15 @@ async function sendCoordinate_thenAction(action){
       console.error('Server Error:', response.statusText);
     }
 	document.querySelector("body>div").removeChild(overlayer);
-	document.getElementById("subTreeAddBtn").checked=false;
+	
+	if(canvas.querySelector('.node.active')===null){
+
+		document.getElementById("deleteNodebutton").disabled = true;
+		document.getElementById("displybutton").disabled = true;
+		document.getElementById("subTreeAddBtn").checked = true;
+		document.getElementById("subTreeAddBtn").disabled = true;
+		
+	}else{document.getElementById("subTreeAddBtn").checked=false;}
 }
 async function displayCont(){
 	const nodeTodisplay=dataTree.nodeMap.get(canvas.querySelector('.node.active').id);
@@ -496,7 +510,7 @@ async function sendToRouter_a() {
 			Responsearea.innerHTML=marked.parse(textbuffer);
 			}
 			const usernode=new TreeNode(null);const botnode=new TreeNode(null);
-			usernode.text=messageContent.slice(0,10);botnode.text=textbuffer.slice(0,10);
+			usernode.text=messageContent.slice(0,20);botnode.text=textbuffer.slice(0,20);
 			usernode.content=messageContent;botnode.content=textbuffer;
 			usernode.beforeInit=false;usernode.role="user";
 			botnode.beforeInit=false;
@@ -546,7 +560,7 @@ async function sendToRouter_u() {
 			Responsearea.innerHTML=marked.parse(textbuffer);
 			}
 			const botnode=new TreeNode(null);
-			botnode.text=textbuffer.slice(0,10);
+			botnode.text=textbuffer.slice(0,20);
 			botnode.content=textbuffer;
 			botnode.model=modelName;botnode.role="assistant";
 			botnode.beforeInit=false;
@@ -662,7 +676,7 @@ async function Sappend(){
         if (response.ok) {
 			const node=new TreeNode(null);
 			node.content=appendCont.value;
-			node.text=appendCont.value.slice(0,10);
+			node.text=appendCont.value.slice(0,20);
 			node.role=appendRole.value;
 			node.model=appendModel.value;
 			node.beforeInit=false;

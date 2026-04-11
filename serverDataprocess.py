@@ -37,7 +37,7 @@ async def session_check(request: Request,call_next):
     if request.url.path=="/" or request.url.path=="/docs" or "/login" in request.url.path or "/public/" in request.url.path:
         response= await call_next(request)
         return response
-    if request.cookies["lcv_session_ID"]!=None:
+    if "lcv_session_ID" in request.cookies:
         if request.cookies["lcv_session_ID"]!=SESSION_ID:
             return RedirectResponse(url="/?error=1")
         else:
@@ -455,7 +455,7 @@ class LinkedList:
         self.selectedNode=locatedNode
         print("FINISH_SIGNAL")
     def loadBlock(self,blcID):
-        for i in range(blcID*20,blcID*20+19):
+        for i in range(blcID*20,blcID*20+20):
             self.loadSubtree(i)
     def loadSubtree(self,Treeid):
         if Treeid not in self.subTreeset:
