@@ -390,7 +390,7 @@ async function sendCoordinate_thenAction(action){
 	overlayer.className = 'overlay';
 	document.querySelector("body>div").appendChild(overlayer);
 	let coordinate=[];
-	if(document.getElementById("subTreeAddBtn").checked===true){
+	if(document.getElementById("subTreeAddBtn").checked===true && action=="append"){
 		coordinate=[];
 	}else if(action==='load'){
 		coordinate=[parseInt(canvas.querySelector('.loadBtn.Loading').id.slice(7))*20];
@@ -598,19 +598,20 @@ async function saveJSON(){
         console.error('request failed:', error);
     }
 }
-async function loadTree(){
+async function loadTree(blcID=-1){
   try {
         const response = await fetch('/load-tree', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: '', 
+            body: blcID, 
         });
 
         if (response.ok) {
 			const treeArray=JSON.parse(await response.text());
-			dataTree.constructTree(treeArray,parseInt(canvas.querySelector('.loadBtn.Loading').id.slice(7)));
+			if(blcID>=0){dataTree.constructTree(treeArray,blcID);}else{
+			dataTree.constructTree(treeArray,parseInt(canvas.querySelector('.loadBtn.Loading').id.slice(7)));}
         } else {
             console.error('Server Error:', response.statusText);
         }
@@ -710,27 +711,27 @@ async function Sdelete(){
 
         if (response.ok) {
 			const nodeToDel=dataTree.nodeMap.get(canvas.querySelector('.node.active').id)
-			if(nodeToDel.Pnode.id.split("_")[1]===0){
+			if(nodeToDel.Pnode.id.split("_")[1]==='0'){
 				let maxblcID=nodeToDel.Pnode.id.split("_")[0];
 				dataTree.nodeMap.forEach((_v,key,_i)=>{
 					if(parseInt(key.split("_")[0])>maxblcID)maxblcID=parseInt(key.split("_")[0]);
 				})
-				let lastSubTree;
+				let lastSubTree=null;
 				for(let i=maxblcID;i>parseInt(nodeToDel.Pnode.id.split("_")[0]);i--){
 					if(dataTree.nodeMap.has(`${i}_0`)===true){
 						if(lastSubTree!==null){
 							dataTree.nodeMap.get(`${i}_0`).Cnode.push(lastSubTree);
 							lastSubTree=dataTree.nodeMap.get(`${i}_0`).Cnode[0];
 							dataTree.nodeMap.get(`${i}_0`).Cnode.shift();
-							dataTree.constructTree_obj(`${i}_0`);
-							}else if(lastSubTree===null){
+							dataTree.constructTree_obj(i);
+						}else if(lastSubTree===null){
 							lastSubTree=dataTree.nodeMap.get(`${i}_0`).Cnode[0];
-							await loadBlock(i);}
+							await loadTree(i);}
 					}else if(dataTree.nodeMap.has(`${i}_0`)===false){
 						lastSubTree=null;
 					}
 				}
-				
+				if(lastSubTree!==null){nodeToDel.Pnode.Cnode.push(lastSubTree);}
 			}
 			dataTree.deleteNode(nodeToDel.id);
         } else {

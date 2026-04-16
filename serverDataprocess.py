@@ -98,9 +98,11 @@ async def SRsave():
         saveSubtrees(ll)
         return Response(status_code=200)
 @app.post('/load-tree')
-async def SRload(response:Response):
+async def SRload(response:Response,blcID:Annotated[int,Body()]):
     async with lock:
         response.headers['Content-Type']='text/plain;charset=utf-8'
+        if blcID>=0:
+            ll.loadBlock(blcID)
         return transmitTree(ll)
 @app.post('/load-lastblc')
 async def SRloadlast(response:Response):

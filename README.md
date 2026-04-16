@@ -11,11 +11,11 @@ This is a Openrouter API used conversations llm(large language model) reader too
 
 ### Demonstration
 Login & View node
-![Loginview](./Login&View_node.gif)
+
 Manually append node
-![addnode](./Manually_add_node.gif)
+
 Send message to model
-![sendmsg](./Send_message.gif)
+
 
 Installation Python is required
 
@@ -39,11 +39,11 @@ Installation Python is required
 
 ### 展示
 登录&展示节点
-![Loginview](./Login&View_node.gif)
+
 手动添加节点
-![addnode](./Manually_add_node.gif)
+
 发送消息
-![sendmsg](./Send_message.gif)
+
 
 需要先安装python
 
