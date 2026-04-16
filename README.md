@@ -11,13 +11,13 @@ This is a Openrouter API used conversations llm(large language model) reader too
 
 ### Demonstration
 Login & View node
-
-Manually append node
-
+<img width="1574" height="1348" alt="login_and_view_node" src="https://github.com/user-attachments/assets/9c3cdabe-8e21-4bbf-a7a2-699474f9540d" />
+Manually append&delete node
+<img width="1301" height="1347" alt="manually_add_and_delete_node" src="https://github.com/user-attachments/assets/752f63f1-b756-44ca-8dbf-411df088786a" />
 Send message to model
-
-
-Installation Python is required
+<img width="1301" height="1347" alt="send_message" src="https://github.com/user-attachments/assets/dc5d46d2-70c8-422a-9338-dbdf883fd577" />
+### Deployment
+Installation of Python is required
 
 - After cloning this repository,Put the password to enter your viewer and API key of your openrouter in  `serverDataprocess.py` or set as environment variable as `OPENROUTER_API` `VIEWER_PASSWORD` respectively.
 - Run `pip install -r requirements.txt;fastapi dev .\serverDataprocess.py`.
@@ -39,12 +39,12 @@ Installation Python is required
 
 ### 展示
 登录&展示节点
-
-手动添加节点
-
+<img width="1574" height="1348" alt="login_and_view_node" src="https://github.com/user-attachments/assets/9c3cdabe-8e21-4bbf-a7a2-699474f9540d" />
+手动添加删除节点
+<img width="1301" height="1347" alt="manually_add_and_delete_node" src="https://github.com/user-attachments/assets/752f63f1-b756-44ca-8dbf-411df088786a" />
 发送消息
-
-
+<img width="1301" height="1347" alt="send_message" src="https://github.com/user-attachments/assets/dc5d46d2-70c8-422a-9338-dbdf883fd577" />
+### 部署
 需要先安装python
 
 - 将代码clone到本地
